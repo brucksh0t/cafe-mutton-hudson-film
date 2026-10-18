@@ -134,9 +134,11 @@
   films.forEach(function(f){
     var caps=[].slice.call(f.sec.querySelectorAll('.cap')),isHero=f.name==='hero',o={f:0};
     var tl=gsap.timeline({defaults:{ease:'none'},scrollTrigger:{trigger:f.sec,start:'top top',end:'+='+LEN[f.name]+'%',pin:true,pinSpacer:f.sec.parentElement.classList.contains('pin-spacer')?f.sec.parentElement:undefined,scrub:.5,anticipatePin:1,invalidateOnRefresh:true,
-      onUpdate:function(st){f.draw(o.f);if(isHero)ctaOut(st.progress>.2);}, onLeave:function(){if(isHero)ctaOut(true);}, onEnterBack:function(st){if(isHero)ctaOut(st.progress>.2);}}});
+      onUpdate:function(st){f.draw(o.f);if(isHero)ctaOut(st.progress>.27);}, onLeave:function(){if(isHero)ctaOut(true);}, onEnterBack:function(st){if(isHero)ctaOut(st.progress>.27);}}});
     tl.to(o,{f:f.n-1,duration:10,onUpdate:function(){f.draw(o.f);}},0);
-    if(isHero){capOut(tl,caps[0],2.2);capIn(tl,caps[1],5.6);
+    if(isHero){// the H1 stays in the accessibility tree (opacity only); the buttons leave with visibility so they can't be tabbed to while invisible
+      tl.fromTo(caps[0],{opacity:1,y:0},{opacity:0,y:-20,duration:.5,ease:'power2.in',immediateRender:false},2.2);
+      tl.fromTo(caps[0].querySelectorAll('a'),{autoAlpha:1},{autoAlpha:0,duration:.5,ease:'power2.in',immediateRender:false},2.2);capIn(tl,caps[1],5.6);
       tl.fromTo(caps[1].querySelector('.sign'),{clipPath:'inset(0 50% 0 50%)'},{clipPath:'inset(0 0% 0 0%)',duration:1.4,ease:'power2.out'},5.7);}
     else if(f.name==='pie'){
       tl.fromTo(AP,{p:0},{p:1,duration:3.4,ease:'expo.in',onUpdate:function(){apSet(1+(AP.S-1)*AP.p);}},.6).set(ap,{autoAlpha:0},4.05);
@@ -172,7 +174,7 @@
   // photo fan opens from a stack with the scroll (G09)
   var fan=gsap.utils.toArray('.fan__i');
   if(fan.length){var tlf=gsap.timeline({scrollTrigger:{trigger:'.fan',start:'top 85%',end:'center 50%',scrub:.6}});
-    fan.forEach(function(el,i){tlf.fromTo(el,{xPercent:-50,yPercent:-50,x:0,rotation:(i-1)*1.5,scale:.9},{xPercent:[-100,-50,0][i]+(mobile?[8,0,-8][i]:0),yPercent:[-50,-56,-44][i],rotation:[-8,2,9][i],scale:1,ease:'power2.out',immediateRender:true},0);});}
+    fan.forEach(function(el,i){tlf.fromTo(el,{xPercent:-50,yPercent:-50,x:0,rotation:(i-1)*1.5,scale:.9},{xPercent:[-100,-50,0][i]+(innerWidth<900?[16,0,-16][i]:0),yPercent:[-50,-56,-44][i],rotation:[-8,2,9][i],scale:1,ease:'power2.out',immediateRender:true},0);});}
   // press: names slide in from alternating sides, then their rule sweeps across
   gsap.utils.toArray('.press__list li').forEach(function(li,i){var l=li.dataset.from==='left';
     gsap.timeline({scrollTrigger:{trigger:li,start:'top 88%',once:true}})
