@@ -134,8 +134,10 @@
   films.forEach(function(f){
     var caps=[].slice.call(f.sec.querySelectorAll('.cap')),isHero=f.name==='hero',o={f:0};
     var tl=gsap.timeline({defaults:{ease:'none'},scrollTrigger:{trigger:f.sec,start:'top top',end:'+='+LEN[f.name]+'%',pin:true,pinSpacer:f.sec.parentElement.classList.contains('pin-spacer')?f.sec.parentElement:undefined,scrub:.5,anticipatePin:1,invalidateOnRefresh:true,
-      onUpdate:function(st){f.draw(o.f);if(isHero)ctaOut(st.progress>.27);}, onLeave:function(){if(isHero)ctaOut(true);}, onEnterBack:function(st){if(isHero)ctaOut(st.progress>.27);}}});
-    tl.to(o,{f:f.n-1,duration:10,onUpdate:function(){f.draw(o.f);}},0);
+      onUpdate:function(){f.draw(o.f);}, onLeave:function(){if(isHero)ctaOut(true);}}});
+    // header CTA follows the hero CTA's actual (scrub-smoothed) opacity, so two filled buttons never share a screen
+    var hbtn=isHero&&f.sec.querySelector('.cap--hero .btns a');function syncCta(){if(hbtn)ctaOut(+gsap.getProperty(hbtn,'opacity')<.05||gsap.getProperty(hbtn,'visibility')==='hidden');}
+    tl.to(o,{f:f.n-1,duration:10,onUpdate:function(){f.draw(o.f);syncCta();}},0);
     if(isHero){// the H1 stays in the accessibility tree (opacity only); the buttons leave with visibility so they can't be tabbed to while invisible
       tl.fromTo(caps[0],{opacity:1,y:0},{opacity:0,y:-20,duration:.5,ease:'power2.in',immediateRender:false},2.2);
       tl.fromTo(caps[0].querySelectorAll('a'),{autoAlpha:1},{autoAlpha:0,duration:.5,ease:'power2.in',immediateRender:false},2.2);capIn(tl,caps[1],5.6);

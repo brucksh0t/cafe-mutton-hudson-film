@@ -211,7 +211,7 @@ address{font-style:normal;font-family:var(--disp);font-size:1.8rem;line-height:1
 @media (max-width:420px){.menu li{font-size:.98rem}h1{font-size:2.6rem}.mf__p{font-size:1.75rem}}
 @media (max-width:380px){.motion .menu--board li{font-size:.9rem;padding:.25rem 0}.motion .cap--board .note{display:none}}
 /* header CTA appears once the hero CTA has left the screen (one filled primary per screen) */
-.js .btn--hdr{opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .12s var(--ease),transform .12s var(--ease),visibility 0s .12s,background .3s var(--ease)}
+.js .btn--hdr{opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity 0s,transform 0s,visibility 0s,background .3s var(--ease)}
 .js.cta-out .btn--hdr{opacity:1;visibility:visible;transform:none;transition:opacity .35s var(--ease),transform .35s var(--ease),visibility 0s,background .3s var(--ease)}
 /* reduced motion / lite / no JS: stills and all copy, no pinning, nothing scaled above 1x */
 html:not(.motion) .film__label{position:relative;display:block;width:max-content;margin:.6rem auto 1.2rem;text-align:center;right:auto;bottom:auto}
