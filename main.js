@@ -78,7 +78,7 @@
     if(im.complete)use();else im.addEventListener('load',use);};
   Film.prototype.away=function(){var r=this.box.getBoundingClientRect(),h=innerHeight;return r.top>h?(r.top-h)/h:r.bottom<0?-r.bottom/h:0;};
   Film.prototype.state=function(){var im=this.drawnQ==='full'?this.full[this.drawn]:this.lq[this.drawn];
-    return {name:this.name,set:this.set,n:this.n,cur:this.cur,drawn:this.drawn,drawnQ:this.drawnQ,loaded:this.ok.reduce(function(a,b){return a+b;},0),
+    return {name:this.name,set:this.set,n:this.n,lead:this.lead||0,cur:this.cur,drawn:this.drawn,drawnQ:this.drawnQ,loaded:this.ok.reduce(function(a,b){return a+b;},0),
       previews:this.lok.reduce(function(a,b){return a+b;},0),requested:this.req.reduce(function(a,b){return a+b;},0)+this.lreq.reduce(function(a,b){return a+b;},0),
       cw:this.cv.width,ch:this.cv.height,src:im?im.naturalWidth+'x'+im.naturalHeight:null};};
   Film.prototype.draw=function(f,force){f=Math.max(0,Math.min(this.n-1,Math.round(f)));if(f===this.cur&&!force)return;if(f!==this.cur)this.dir=f>this.cur?1:-1;this.cur=f;
@@ -92,13 +92,13 @@
     if(!this.shown){this.shown=true;gsap.to(this.poster,{autoAlpha:0,duration:.4});}
     pump();};
   Film.prototype.next=function(){var n=this.n,c=this.cur,dir=this.dir,best=-1,bd=1e9,i,d;
-    for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]){d=Math.abs(i-c);if(d<bd){bd=d;best=i;}}}
+    for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}// nearest preview ahead of the scroll direction
     if(best>=0)return {i:best,lq:true,p:bd};
     for(i=0;i<n;i++){if(!this.req[i]){d=(i-c)*dir;d=d>=0?d:-d*2+1;if(d<bd){bd=d;best=i;}}}
     return best>=0?{i:best,lq:false,p:1000+bd}:null;};
   var films=[].slice.call(document.querySelectorAll('[data-film]')).map(function(s){return new Film(s);});
   window.__cmFilms=films;
-  var started=false,live=0,MAX=4,NEAR=2.5;
+  var started=false,live=0,MAX=4,NEAR=2.5,NEARLQ=4;
   function fetchOne(f,i,lq){var g=f.gen;live++;(lq?f.lreq:f.req)[i]=1;var im=new Image();im.decoding='async';
     function done(okk){live--;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.cur,true);}}pump();}
     im.onload=function(){(im.decode?im.decode():Promise.resolve()).then(function(){done(true);},function(){done(true);});};
@@ -107,9 +107,9 @@
   var pumping=false;
   function pump(){if(!started||!extOK||pumping)return;pumping=true;
     for(;;){var best=null,bp=1e18;
-      for(var k=0;k<films.length;k++){var f=films[k],a=f.away();if(a>NEAR)continue;var c=f.next();if(!c)continue;
+      for(var k=0;k<films.length;k++){var f=films[k],a=f.away();if(a>NEARLQ)continue;var c=f.next();if(!c||(!c.lq&&a>NEAR))continue;
         var p=(c.lq?0:1e6)+a*1e4+c.p;if(p<bp){bp=p;best={f:f,c:c};}}
-      if(!best||live>=(best.c.lq?2:MAX))break;fetchOne(best.f,best.c.i,best.c.lq);}
+      if(!best||live>=MAX)break;fetchOne(best.f,best.c.i,best.c.lq);}
     pumping=false;}
   films.forEach(function(f){f.seed();});
   function go(){if(started)return;started=true;['scroll','wheel','touchmove','keydown'].forEach(function(e){removeEventListener(e,go);});pump();}
@@ -137,7 +137,8 @@
       onUpdate:function(){f.draw(o.f);}, onLeave:function(){if(isHero)ctaOut(true);}}});
     // header CTA follows the hero CTA's actual (scrub-smoothed) opacity, so two filled buttons never share a screen
     var hbtn=isHero&&f.sec.querySelector('.cap--hero .btns a');function syncCta(){if(hbtn)ctaOut(+gsap.getProperty(hbtn,'opacity')<.05||gsap.getProperty(hbtn,'visibility')==='hidden');}
-    tl.to(o,{f:f.n-1,duration:10,onUpdate:function(){f.draw(o.f);syncCta();}},0);
+    // hero holds its poster for the first 6% of the pin: the first frames are only requested on the first scroll, so this buys them time on slow networks
+    f.lead=isHero?.06:0;tl.to(o,{f:f.n-1,duration:10*(1-f.lead),onUpdate:function(){f.draw(o.f);syncCta();}},10*f.lead);if(f.lead)tl.set({},{},10);
     if(isHero){// the H1 stays in the accessibility tree (opacity only); the buttons leave with visibility so they can't be tabbed to while invisible
       tl.fromTo(caps[0],{opacity:1,y:0},{opacity:0,y:-20,duration:.5,ease:'power2.in',immediateRender:false},2.2);
       tl.fromTo(caps[0].querySelectorAll('a'),{autoAlpha:1},{autoAlpha:0,duration:.5,ease:'power2.in',immediateRender:false},2.2);capIn(tl,caps[1],5.6);
