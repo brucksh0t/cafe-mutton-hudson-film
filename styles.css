@@ -131,7 +131,7 @@ h1 em{display:block;font-weight:400;font-style:italic;color:var(--butter)}
 .menu li{display:flex;justify-content:space-between;align-items:baseline;gap:1.2rem;padding:.42rem 0}
 .menu li span{flex:1}
 .menu li b{font-family:var(--disp);font-size:1.18rem;font-weight:700;text-align:right;white-space:nowrap}
-.menu__h{font-family:var(--disp);font-style:italic;font-weight:500;font-size:1.3rem;margin:1.6rem 0 .3rem;color:var(--rose)}
+.menu__h{font-family:var(--disp);font-style:italic;font-weight:500;font-size:1.3rem;margin:1.6rem 0 .3rem;color:#a33b55}
 .card .note{color:var(--ink2)}
 .card a:hover{color:var(--rose)}
 .fan{position:relative;height:clamp(300px,42vw,520px)}
@@ -242,3 +242,43 @@ html:not(.motion) .film--glide .menu--board li span{color:var(--cream)}
 @media (max-width:899px){.fan__i:nth-child(1){transform:translate(-84%,-50%) rotate(-8deg)}.fan__i:nth-child(3){transform:translate(-16%,-44%) rotate(9deg)}}
 
 .motion .par img{display:block;margin:-5% 0}
+
+/* ===== Hard edges (Oct 23 direction): no gradients, feathered masks or vignettes anywhere. Frames are crisp; sections meet on clean edges and enter with masked wipes. ===== */
+.nav::after,.film__veil,.motion .film--hero .film__veil,.table::before,.cap--hero .cap__in::before{display:none}
+.nav{border-bottom:1px solid rgba(245,238,225,.14)}
+.film__stage,.film--impact .film__stage,.motion .film__stage,.motion .film--hero .film__stage,.motion .film--impact .film__stage,.motion .film--pie .film__stage,
+.motion .film--glide .film__canvas,.motion .film--glide .film__poster,html:not(.motion) .film--hero .film__stage{-webkit-mask-image:none!important;mask-image:none!important}
+.film__label{box-shadow:none;border-radius:2px;background:#0a1821;padding:.25rem .5rem}
+.motion .cap--hero{text-shadow:none}
+.motion .cap--hero .cap__in{background:rgba(10,24,33,.86);padding:1.1rem 1.3rem 1.3rem;border-left:4px solid var(--butter)}
+.motion .cap--sign,.motion .cap--side,.motion .cap--low,.motion .cap--board{box-shadow:none;border-radius:2px}
+html:not(.motion) .film--hero .cap--hero{text-shadow:none}
+html:not(.motion) .film--hero .cap--hero .cap__in{background:rgba(10,24,33,.86);padding:1rem 1.2rem;border-left:4px solid var(--butter)}
+.paper::before{top:0;bottom:0;-webkit-mask-image:none!important;mask-image:none!important}
+.motion .manifesto::before{-webkit-mask-image:none!important;mask-image:none!important}
+.fan__i{box-shadow:none;border-radius:2px;outline:1px solid rgba(245,238,225,.18)}
+.iris{border-radius:2px}
+/* Ken Burns clips: the still is frame 1 of the clip, so the swap is invisible; reduced motion and lite keep the still */
+.clip{position:relative}
+.clip__still{display:block;width:100%;height:auto}
+.clip__v{display:none}
+.motion .clip__v{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+.motion .clip__v.on{opacity:1}
+.pe__media .iris,.vis__media .iris{max-width:720px}
+/* micro-interactions: a solid colour wipes across buttons; text links thicken their underline; nav links get a hard bar wipe */
+.btn{position:relative;overflow:hidden;isolation:isolate;box-shadow:none!important;transition:color .25s var(--ease),border-color .25s var(--ease),transform .15s var(--ease)}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--wipe,var(--cream));transform:scaleX(0);transform-origin:100% 50%;transition:transform .45s var(--ease)}
+.btn:hover::before,.btn:focus-visible::before{transform:scaleX(1);transform-origin:0 50%}
+.btn:active{transform:translateY(1px)}
+.btn--primary{--wipe:var(--butter)}
+.btn--primary:hover,.btn--primary:focus-visible{background:var(--apron);border-color:var(--butter);color:#1b130c}
+.btn--ghost{--wipe:var(--cream)}
+.btn--ghost:hover,.btn--ghost:focus-visible{background:transparent;color:var(--bg);border-color:var(--cream)}
+.btn--ink{--wipe:var(--ink)}
+.btn--ink:hover,.btn--ink:focus-visible{background:transparent;color:var(--paper);border-color:var(--ink)}
+a:not(.btn){text-underline-offset:.18em;transition:color .2s var(--ease),text-decoration-thickness .2s var(--ease)}
+a:not(.btn):hover,a:not(.btn):focus-visible{text-decoration-thickness:3px}
+.nav__links a{position:relative}
+.nav__links a::after{content:"";position:absolute;left:.75rem;right:.75rem;bottom:8px;height:2px;background:var(--butter);transform:scaleX(0);transform-origin:100% 50%;transition:transform .35s var(--ease)}
+.nav__links a:hover::after,.nav__links a:focus-visible::after{transform:scaleX(1);transform-origin:0 50%}
+@media (prefers-reduced-motion:reduce){.btn,.btn::before,a:not(.btn),.nav__links a::after{transition:none}}

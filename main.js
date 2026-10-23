@@ -53,7 +53,7 @@
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
   // Preview ladder (mq 360x480 / dq 480x270, every 3rd frame) lands first; the sharp frame replaces it.
-  var FV='4',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
+  var FV='5',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
   function cap(){return Math.min(window.devicePixelRatio||1,2);}
   // Sharp frames are per-frame AVIF (lowest quality that still matches the master, with a floor), WebP fallback (from The Hill build).
   var ext='webp',extOK=false;
@@ -204,10 +204,19 @@
     gsap.timeline({scrollTrigger:{trigger:li,start:'top 88%',once:true}})
       .from(li.children,{x:l?-70:70,autoAlpha:0,duration:.9,stagger:.12,ease:'expo.out'})
       .fromTo(li,{'--s':0},{'--s':1,duration:.8,ease:'power2.inOut'},.2);});
-  // photos: iris reveal + gentle parallax (the image overhangs its frame by 5% top and bottom, so it drifts without being scaled up)
-  gsap.utils.toArray('.par').forEach(function(el){var img=el.querySelector('img'),sp=+el.dataset.speed||8;
-    gsap.fromTo(el,{clipPath:'inset(14% 14% 14% 14% round 120px)'},{clipPath:'inset(0% 0% 0% 0% round 6px)',duration:1.3,ease:'expo.out',scrollTrigger:{trigger:el,start:'top 86%',once:true}});
-    gsap.fromTo(img,{yPercent:-sp/3},{yPercent:sp/3,ease:'none',scrollTrigger:{trigger:el,start:'top bottom',end:'bottom top',scrub:true}});});
+  // photos: a hard-edged masked wipe opens each clip frame (no rounded iris, no feather)
+  gsap.utils.toArray('.iris.clip').forEach(function(el,i){gsap.fromTo(el,{clipPath:i%2?'inset(0% 0% 0% 100%)':'inset(0% 100% 0% 0%)'},{clipPath:'inset(0% 0% 0% 0%)',duration:1.1,ease:'expo.inOut',scrollTrigger:{trigger:el,start:'top 84%',once:true}});});
+  // paper sections rise on a hard diagonal edge that flattens as they arrive (scrubbed); the manifesto keeps its seam with the CLOSE paper below
+  gsap.utils.toArray('.paper').forEach(function(sec){gsap.fromTo(sec,{clipPath:'polygon(0% 14%, 100% 0%, 100% 100%, 0% 100%)'},{clipPath:'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',ease:'none',scrollTrigger:{trigger:sec,start:'top bottom',end:'top 45%',scrub:true}});});
+  // impact films are wiped in on a clean edge as they arrive, finishing exactly when the pin starts: the glide from the right (it pans that way), brunch opens from the centre
+  [['glide','inset(0% 0% 0% 100%)'],['brunch','inset(0% 50% 0% 50%)']].forEach(function(w){var s=document.querySelector('[data-film="'+w[0]+'"]');if(!s)return;var st=s.querySelector('.film__stage'),bx=s.parentElement.classList.contains('pin-spacer')?s.parentElement:s;
+    gsap.fromTo(st,{clipPath:w[1]},{clipPath:'inset(0% 0% 0% 0%)',ease:'none',scrollTrigger:{trigger:bx,start:'top bottom',end:'top top',scrub:true}});});
+  // Ken Burns clips: sources attach only when the frame reaches the viewport; play once at half visible and hold the last frame (no loop, so no cut)
+  var clips=[].slice.call(document.querySelectorAll('.clip__v'));
+  if(clips.length&&'IntersectionObserver' in window){var cio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(!e.isIntersecting)return;
+      if(!v.dataset.ld){v.dataset.ld='1';[['webm','video/webm'],['mp4','video/mp4']].forEach(function(x){var so=document.createElement('source');so.src=v.dataset[x[0]];so.type=x[1];v.appendChild(so);});v.load();}
+      if(e.intersectionRatio>=.5){cio.unobserve(v);v.addEventListener('playing',function(){v.classList.add('on');},{once:true});var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});}});},{threshold:[0,.5]});
+    clips.forEach(function(v){cio.observe(v);});}
   gsap.from('.hours tr',{x:36,autoAlpha:0,duration:.6,stagger:.05,ease:'power3.out',scrollTrigger:{trigger:'.hours',start:'top 88%',once:true}});
   gsap.from('.vis__logo',{clipPath:'inset(0 50% 0 50%)',duration:1.4,ease:'power2.out',scrollTrigger:{trigger:'.vis__logo',start:'top 92%',once:true}});
   function refresh(){chrome();fitAp();ScrollTrigger.refresh();}
