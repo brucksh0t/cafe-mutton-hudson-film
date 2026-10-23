@@ -145,7 +145,7 @@
       tl.fromTo(caps[0].querySelectorAll('a'),{autoAlpha:1},{autoAlpha:0,duration:.5,ease:'power2.in',immediateRender:false},2.2);capIn(tl,caps[1],5.6);
       tl.fromTo(caps[1].querySelector('.sign'),{clipPath:'inset(0 50% 0 50%)'},{clipPath:'inset(0 0% 0 0%)',duration:1.4,ease:'power2.out'},5.7);}
     else if(f.name==='pie'){
-      tl.fromTo(AP,{p:0},{p:1,duration:3.4,ease:'expo.in',onUpdate:function(){apSet(1+(AP.S-1)*AP.p);}},.6).set(ap,{autoAlpha:0},4.05);
+      tl.fromTo(AP,{p:0},{p:1,duration:3.4,ease:'expo.in',onUpdate:function(){apSet(1+(AP.S-1)*AP.p);}},.6).fromTo(ap,{opacity:1},{opacity:0,duration:1.0,ease:'power1.inOut',immediateRender:false},3.0).set(ap,{visibility:'hidden'},4.05);// the paper dissolves as the letter opens, so there is never a hard cut
       capIn(tl,caps[0],5.2);}
     else if(f.name==='glide'){var li=f.sec.querySelectorAll('.menu--board li');
       if(mobile){gsap.set(caps[0],{autoAlpha:1});tl.fromTo(li,{x:30,autoAlpha:0},{x:0,autoAlpha:1,stagger:.5,duration:.8,ease:'power3.out'},.6);}
