@@ -102,7 +102,8 @@
   function fetchOne(f,i,lq){var g=f.gen;live++;(lq?f.lreq:f.req)[i]=1;var im=new Image();im.decoding='async';
     function done(okk){live--;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.cur,true);}}pump();}
     im.onload=function(){(im.decode?im.decode():Promise.resolve()).then(function(){done(true);},function(){done(true);});};
-    im.onerror=function(){done(false);};// a failed frame is not retried; drawing falls back to neighbours and the poster
+    im.onerror=function(){var rq=lq?f.lreq:f.req,key=(lq?'l':'f')+i;f.tries=f.tries||{};f.tries[key]=(f.tries[key]||0)+1;
+      if(f.tries[key]<3)setTimeout(function(){if(g===f.gen){rq[i]=0;pump();}},700*f.tries[key]);done(false);};// a failed frame (e.g. a CDN 503) is retried twice with backoff; meanwhile drawing uses the nearest loaded frame
     im.src=f.src(i,lq);}
   var pumping=false;
   function pump(){if(!started||!extOK||pumping)return;pumping=true;
@@ -183,10 +184,10 @@
     gsap.timeline({scrollTrigger:{trigger:li,start:'top 88%',once:true}})
       .from(li.children,{x:l?-70:70,autoAlpha:0,duration:.9,stagger:.12,ease:'expo.out'})
       .fromTo(li,{'--s':0},{'--s':1,duration:.8,ease:'power2.inOut'},.2);});
-  // photos: iris reveal + gentle parallax (scale 1.08 keeps the drift inside the frame)
+  // photos: iris reveal + gentle parallax (the image overhangs its frame by 5% top and bottom, so it drifts without being scaled up)
   gsap.utils.toArray('.par').forEach(function(el){var img=el.querySelector('img'),sp=+el.dataset.speed||8;
     gsap.fromTo(el,{clipPath:'inset(14% 14% 14% 14% round 120px)'},{clipPath:'inset(0% 0% 0% 0% round 6px)',duration:1.3,ease:'expo.out',scrollTrigger:{trigger:el,start:'top 86%',once:true}});
-    gsap.fromTo(img,{yPercent:-sp/3,scale:1.08},{yPercent:sp/3,scale:1.08,ease:'none',scrollTrigger:{trigger:el,start:'top bottom',end:'bottom top',scrub:true}});});
+    gsap.fromTo(img,{yPercent:-sp/3},{yPercent:sp/3,ease:'none',scrollTrigger:{trigger:el,start:'top bottom',end:'bottom top',scrub:true}});});
   gsap.from('.hours tr',{x:36,autoAlpha:0,duration:.6,stagger:.05,ease:'power3.out',scrollTrigger:{trigger:'.hours',start:'top 88%',once:true}});
   gsap.from('.vis__logo',{clipPath:'inset(0 50% 0 50%)',duration:1.4,ease:'power2.out',scrollTrigger:{trigger:'.vis__logo',start:'top 92%',once:true}});
   function refresh(){chrome();fitAp();ScrollTrigger.refresh();}

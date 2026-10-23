@@ -240,3 +240,5 @@ html:not(.motion) .film--glide .menu--board li span{color:var(--cream)}
 .fan__i:nth-child(2){transform:translate(-50%,-56%) rotate(2deg);z-index:2}
 .fan__i:nth-child(3){transform:translate(0%,-44%) rotate(9deg)}
 @media (max-width:899px){.fan__i:nth-child(1){transform:translate(-84%,-50%) rotate(-8deg)}.fan__i:nth-child(3){transform:translate(-16%,-44%) rotate(9deg)}}
+
+.motion .par img{display:block;margin:-5% 0}
