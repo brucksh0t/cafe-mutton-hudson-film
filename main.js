@@ -34,13 +34,14 @@
   chrome();addEventListener('resize',chrome);
   // one filled BOOK DINNER per screen: header/bar copy fills only once the hero CTA has left
   function ctaOut(v){root.classList.toggle('cta-out',!!v);}
-  var motion=/\bmotion\b/.test(root.className)&&window.gsap&&window.ScrollTrigger;
-  if(!motion){
+  function still(){
     root.classList.remove('motion');
     var hb=document.querySelector('.cap--hero .btns');
     if(hb&&'IntersectionObserver' in window)new IntersectionObserver(function(es){ctaOut(!es[0].isIntersecting);}).observe(hb);else ctaOut(true);
-    return;
   }
+  if(!/\bmotion\b/.test(root.className)){still();return;}
+  // The scroll scenes boot only after the hero poster has painted, so their setup work never delays the first (LCP) paint.
+  function boot(){
   gsap.registerPlugin(ScrollTrigger);
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
@@ -193,4 +194,11 @@
   function refresh(){chrome();fitAp();ScrollTrigger.refresh();}
   addEventListener('load',refresh);
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(refresh);
+  }
+  var booted=false,hp=document.querySelector('[data-film="hero"] .film__poster');
+  // GSAP is fetched only after the poster, so it never competes with the first paint for bandwidth
+  function load(src){return new Promise(function(res,rej){var e=document.createElement('script');e.src=src;e.onload=res;e.onerror=rej;document.head.appendChild(e);});}
+  function go(){if(booted)return;booted=true;
+    load('js/gsap.min.js').then(function(){return load('js/ScrollTrigger.min.js');}).then(function(){requestAnimationFrame(function(){setTimeout(function(){if(window.gsap&&window.ScrollTrigger)boot();else still();},0);});},still);}
+  if(hp&&!(hp.complete&&hp.naturalWidth)){hp.addEventListener('load',go);hp.addEventListener('error',go);setTimeout(go,3000);}else go();
 })();
