@@ -46,7 +46,7 @@ Each film is image-to-video generated with the restaurant's photo as the first f
 |---|---|---|
 | hero (walk up to the blue door) | 81 | storefront photo, 16:9 crop → tighter crop on the door and sign |
 | pie ("CLOSE" aperture, slow descent) | 65 | pie photo rotated 90° (overhead) → closer, turned 8° |
-| glide (camera crosses the table) | 81 | fish photo → terrine photo. The strip of table between the two plates is generated: the two plates were photographed separately. |
+| glide (camera crosses the table) | 81 | fish photo → terrine photo. The table between the two plates is AI-generated and invented: it does not come from any photo (the two plates were photographed separately). The on-screen label says so: “The table between the plates is AI-generated.” |
 | brunch (descent to the egg) | 65 | porridge photo → closer, turned 6° |
 
 Rejected after frame-by-frame review: a skate push-in (a bright glare blob slid across the fish), a terrine push-in (generated sun patches on the table and plate), and a figurine push-in (the ceramic dog's painted eyes changed shape; soft source).

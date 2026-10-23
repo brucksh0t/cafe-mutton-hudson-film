@@ -33,7 +33,9 @@
     root.style.setProperty('--chrome',(fh+nh)+'px');root.style.setProperty('--flag',fh+'px');root.style.setProperty('--navh',nh+'px');}
   chrome();addEventListener('resize',chrome);
   // one filled BOOK DINNER per screen: header/bar copy fills only once the hero CTA has left
-  function ctaOut(v){root.classList.toggle('cta-out',!!v);}
+  var book=document.querySelector('.mbar .btn--book');
+  // the bottom-bar BOOK DINNER is a real primary only once the hero's primary has left; until then it is a ghost (one filled primary per screen)
+  function ctaOut(v){v=!!v;root.classList.toggle('cta-out',v);if(book){book.classList.toggle('btn--primary',v);book.classList.toggle('btn--ghost',!v);}}
   // posters for the later films (and the hero sign) are attached after the hero poster, so they don't compete with the first paint
   function hydrate(){[].forEach.call(document.querySelectorAll('[data-srcset]'),function(e){e.srcset=e.dataset.srcset;e.removeAttribute('data-srcset');});
     [].forEach.call(document.querySelectorAll('img[data-src]'),function(e){e.src=e.dataset.src;e.removeAttribute('data-src');});}
@@ -51,7 +53,7 @@
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
   // Preview ladder (mq 360x480 / dq 480x270, every 3rd frame) lands first; the sharp frame replaces it.
-  var FV='1',TIERS=[{k:'d',h:1080},{k:'x',h:1440}],STEP=3;
+  var FV='2',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
   function cap(){return Math.min(window.devicePixelRatio||1,2);}
   // Sharp frames are per-frame AVIF (lowest quality that still matches the master, with a floor), WebP fallback (from The Hill build).
   var ext='webp',extOK=false;
@@ -64,23 +66,24 @@
   // Nothing is requested before the first scroll; then one shared queue fetches what is closest to the reader first.
   function Film(sec){
     this.sec=sec;this.box=sec.parentElement.classList.contains('pin-spacer')?sec.parentElement:sec;
-    this.n=+sec.dataset.frames;this.name=sec.dataset.film;
+    this.N=+sec.dataset.frames;this.k=mobile?1:2;this.n=Math.floor((this.N-1)/this.k)+1;/* desktop plays every 2nd frame (weight); phones play all */this.name=sec.dataset.film;
     this.cv=sec.querySelector('canvas');this.ctx=this.cv.getContext('2d');this.poster=sec.querySelector('.film__poster');
     this.cur=0;this.dir=1;this.shown=false;this.set=null;this.gen=0;this.reset();this.size();
   }
   Film.prototype.reset=function(){this.gen++;var n=this.n;this.full=new Array(n);this.lq=new Array(n);this.ok=new Uint8Array(n);this.lok=new Uint8Array(n);
     this.req=new Uint8Array(n);this.lreq=new Uint8Array(n);this.drawn=-1;this.drawnQ='';};
   Film.prototype.pick=function(){if(mobile)return 'm';var c=this.cv,need=Math.max((c.clientWidth||innerWidth)*cap()/16*9,(c.clientHeight||innerHeight)*cap()),t=TIERS[0];
-    for(var i=0;i<TIERS.length;i++){t=TIERS[i];if(t.h>=need*.9)break;}return t.k;};
+    for(var i=0;i<TIERS.length;i++){t=TIERS[i];if(t.h>=need)break;}return t.k;};
   Film.prototype.isL=function(i){return i%STEP===0||i===this.n-1;};
-  Film.prototype.src=function(i,lq){var s=String(i+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?(this.set==='m'?'mq':'dq'):this.set)+'/'+s+'.'+(lq?'webp':ext)+'?v='+FV;};
+  Film.prototype.src=function(i,lq){var s=String(i*this.k+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?(this.set==='m'?'mq':'dq'):this.set)+'/'+s+'.'+(lq?'webp':ext)+'?v='+FV;};
   Film.prototype.size=function(){var d=cap(),w=this.cv.clientWidth||innerWidth,h=this.cv.clientHeight||innerHeight;
     this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.imageSmoothingEnabled=true;this.ctx.imageSmoothingQuality='high';
     var t=this.pick();if(t!==this.set){var had=this.set;this.set=t;if(had){this.reset();this.seed();pump();}}
     this.draw(this.cur,true);};
   // the poster is frame 1 (already on screen), so it seeds the canvas without a frame request
   Film.prototype.seed=function(){if(!this.poster)return;var self=this,im=this.poster,g=this.gen;
-    function use(){if(g!==self.gen||!im.naturalWidth)return;self.lq[0]=im;self.lok[0]=1;self.draw(self.cur,true);}
+    // a fresh Image of the chosen poster file (from cache) reports its true pixel size, not the srcset-density size
+    function use(){if(g!==self.gen||!im.naturalWidth)return;var t=new Image();t.onload=function(){if(g!==self.gen)return;self.lq[0]=t;self.lok[0]=1;self.draw(self.cur,true);};t.src=im.currentSrc||im.src;}
     if(im.complete)use();else im.addEventListener('load',use);};
   Film.prototype.away=function(){var r=this.box.getBoundingClientRect(),h=innerHeight;return r.top>h?(r.top-h)/h:r.bottom<0?-r.bottom/h:0;};
   Film.prototype.state=function(){var im=this.drawnQ==='full'?this.full[this.drawn]:this.lq[this.drawn];
@@ -98,8 +101,9 @@
     if(!this.shown){this.shown=true;gsap.to(this.poster,{autoAlpha:0,duration:.4});}
     pump();};
   Film.prototype.next=function(){var n=this.n,c=this.cur,dir=this.dir,best=-1,bd=1e9,i,d;
-    for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}// nearest preview ahead of the scroll direction
-    if(best>=0)return {i:best,lq:true,p:bd};
+    // no low-res previews (they drew above 1.0x): every 3rd sharp frame first, ahead of the scroll direction, then the gaps
+    for(i=0;i<n;i++){if(this.isL(i)&&!this.req[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
+    if(best>=0)return {i:best,lq:false,p:bd};
     for(i=0;i<n;i++){if(!this.req[i]){d=(i-c)*dir;d=d>=0?d:-d*2+1;if(d<bd){bd=d;best=i;}}}
     return best>=0?{i:best,lq:false,p:1000+bd}:null;};
   var films=[].slice.call(document.querySelectorAll('[data-film]')).map(function(s){return new Film(s);});
