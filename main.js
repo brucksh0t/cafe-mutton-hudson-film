@@ -134,9 +134,9 @@
   var pumping=false;
   function pump(){if(!started||!extOK||pumping)return;pumping=true;
     for(;;){var best=null,bp=1e18;
-      for(var k=0;k<films.length;k++){var f=films[k],a=f.away();if(a>4.5)continue;var c=f.next();if(!c)continue;
-        // a film coming up (up to 4 screens away) gets its first 3 key frames early, so a fast cold scroll never meets it on the poster alone
-        var ld=0,e1=-1;for(var z=1;z<f.n&&ld<3;z++){if(f.isL(z)){if(f.req[z])ld++;else if(e1<0)e1=z;}}var early=a>0&&a<=4&&!c.lq&&ld<3&&e1>0;if(early)c={i:e1,lq:false,p:0};/* frame 1 is the poster, so start from the next key frame */
+      for(var k=0;k<films.length;k++){var f=films[k],a=f.away();if(a>8.5)continue;var c=f.next();if(!c)continue;
+        // a film coming up (up to 8 screens away) gets its first 3 key frames early, so a fast cold scroll never meets it on the poster alone
+        var ld=0,e1=-1;for(var z=1;z<f.n&&ld<3;z++){if(f.isL(z)){if(f.req[z])ld++;else if(e1<0)e1=z;}}var early=a>0&&a<=8&&!c.lq&&ld<3&&e1>0;if(early)c={i:e1,lq:false,p:0};/* frame 1 is the poster, so start from the next key frame */
         if(!early&&(a>NEARLQ||(!c.lq&&a>NEAR)))continue;
         var p=early?5e5+a:(c.lq?0:1e6)+a*1e4+c.p;if(p<bp){bp=p;best={f:f,c:c};}}
       if(!best||live>=MAX)break;fetchOne(best.f,best.c.i,best.c.lq);}
