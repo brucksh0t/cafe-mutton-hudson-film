@@ -53,7 +53,7 @@
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
   // Preview ladder (mq 360x480 / dq 480x270, every 3rd frame) lands first; the sharp frame replaces it.
-  var FV='5',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
+  var FV='6',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
   function cap(){return Math.min(window.devicePixelRatio||1,2);}
   // Sharp frames are per-frame AVIF (lowest quality that still matches the master, with a floor), WebP fallback (from The Hill build).
   var ext='webp',extOK=false;
@@ -72,10 +72,14 @@
   }
   Film.prototype.reset=function(){this.gen++;var n=this.n;this.full=new Array(n);this.lq=new Array(n);this.ok=new Uint8Array(n);this.lok=new Uint8Array(n);
     this.req=new Uint8Array(n);this.lreq=new Uint8Array(n);this.drawn=-1;this.drawnQ='';};
-  Film.prototype.pick=function(){if(mobile)return 'm';var c=this.cv,need=Math.max((c.clientWidth||innerWidth)*cap()/16*9,(c.clientHeight||innerHeight)*cap()),t=TIERS[0];
+  // phones: centre-cropped tiers cut from the same 1080x1440 masters (n = 720x1440 for full-screen films, g = 1080x1140 for the glide band).
+  // A crop is used only when it draws at no larger a scale than m would (and never above the 1.0x CSS basis), so it is pixel-for-pixel the same picture with fewer bytes.
+  var CROP={hero:['n',720,1440],pie:['n',720,1440],brunch:['n',720,1440],glide:['g',1080,1140]};
+  Film.prototype.pick=function(){if(mobile){var c=this.cv,cw=c.width||1,ch=c.height||1,cr=CROP[this.name];if(!cr)return 'm';
+      var sM=Math.max(cw/1080,ch/1440),sC=Math.max(cw/cr[1],ch/cr[2]);return sC<=Math.max(sM,1)+1e-3?cr[0]:'m';}var c=this.cv,need=Math.max((c.clientWidth||innerWidth)*cap()/16*9,(c.clientHeight||innerHeight)*cap()),t=TIERS[0];
     for(var i=0;i<TIERS.length;i++){t=TIERS[i];if(t.h>=need)break;}return t.k;};
   Film.prototype.isL=function(i){return i%STEP===0||i===this.n-1;};
-  Film.prototype.src=function(i,lq){var s=String(i*this.k+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?'mp':this.set)+'/'+s+'.'+ext+'?v='+FV;};
+  Film.prototype.src=function(i,lq){var s=String(i*this.k+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?(this.set==='m'?'mp':this.set+'p'):this.set)+'/'+s+'.'+ext+'?v='+FV;};
   Film.prototype.size=function(){var d=cap(),w=this.cv.clientWidth||innerWidth,h=this.cv.clientHeight||innerHeight;
     this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.imageSmoothingEnabled=true;this.ctx.imageSmoothingQuality='high';
     var t=this.pick();if(t!==this.set){var had=this.set;this.set=t;if(had){this.reset();this.seed();pump();}}
@@ -108,7 +112,7 @@
   Film.prototype.next=function(){var n=this.n,c=this.cur,dir=this.dir,best=-1,bd=1e9,i,d;
     // phones: full-resolution, low-quality previews (every 3rd frame) land first, so slow networks keep up without drawing above 1.0x
     // previews only while the sharp frames are behind: never for a frame whose sharp copy is loaded or requested, only within 12 frames, and not at all once the next 6 sharp frames are in
-    if(this.set==='m'){var keep=true;for(d=0;d<=6;d++){i=c+d*dir;if(i<0||i>=n)break;if(!this.ok[i]){keep=false;break;}}
+    if(mobile&&slowNet()){var keep=true;for(d=0;d<=6;d++){i=c+d*dir;if(i<0||i>=n)break;if(!this.ok[i]){keep=false;break;}}
       if(!keep){for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]&&!this.req[i]&&Math.abs(i-c)<=12){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
         if(best>=0)return {i:best,lq:true,p:bd};}}
     // then every 3rd sharp frame ahead of the scroll direction, then the gaps
@@ -119,8 +123,10 @@
   var films=[].slice.call(document.querySelectorAll('[data-film]')).map(function(s){return new Film(s);});
   window.__cmFilms=films;
   var started=false,live=0,MAX=3,NEAR=3.5,NEARLQ=4;
-  function fetchOne(f,i,lq){var g=f.gen;live++;(lq?f.lreq:f.req)[i]=1;var im=new Image();im.decoding='async';
-    function done(okk){live--;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.fr==null?f.cur:f.fr,true);}}pump();}
+  // previews are a slow-network fallback only: a running average of sharp-frame fetch times decides (seeded from navigator.connection), so fast links never fetch a frame twice
+  var nc=navigator.connection||{},EW=(nc.downlink&&nc.downlink>=5)?200:600;function slowNet(){return EW>350;}
+  function fetchOne(f,i,lq){var g=f.gen,t0=performance.now();live++;(lq?f.lreq:f.req)[i]=1;var im=new Image();im.decoding='async';
+    function done(okk){live--;if(okk&&!lq)EW=EW*.7+(performance.now()-t0)*.3;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.fr==null?f.cur:f.fr,true);}}pump();}
     im.onload=function(){(im.decode?im.decode():Promise.resolve()).then(function(){done(true);},function(){done(true);});};
     im.onerror=function(){var rq=lq?f.lreq:f.req,key=(lq?'l':'f')+i;f.tries=f.tries||{};f.tries[key]=(f.tries[key]||0)+1;
       if(f.tries[key]<3)setTimeout(function(){if(g===f.gen){rq[i]=0;pump();}},700*f.tries[key]);done(false);};// a failed frame (e.g. a CDN 503) is retried twice with backoff; meanwhile drawing uses the nearest loaded frame
@@ -206,15 +212,13 @@
       .fromTo(li,{'--s':0},{'--s':1,duration:.8,ease:'power2.inOut'},.2);});
   // photos: a hard-edged masked wipe opens each clip frame (no rounded iris, no feather)
   gsap.utils.toArray('.iris.clip').forEach(function(el,i){gsap.fromTo(el,{clipPath:i%2?'inset(0% 0% 0% 100%)':'inset(0% 100% 0% 0%)'},{clipPath:'inset(0% 0% 0% 0%)',duration:1.1,ease:'expo.inOut',scrollTrigger:{trigger:el,start:'top 84%',once:true}});});
-  // paper sections rise on a hard diagonal edge that flattens as they arrive (scrubbed); the manifesto keeps its seam with the CLOSE paper below
-  gsap.utils.toArray('.paper').forEach(function(sec){gsap.fromTo(sec,{clipPath:'polygon(0% 14%, 100% 0%, 100% 100%, 0% 100%)'},{clipPath:'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',ease:'none',scrollTrigger:{trigger:sec,start:'top bottom',end:'top 45%',scrub:true}});});
   // impact films are wiped in on a clean edge as they arrive, finishing exactly when the pin starts: the glide from the right (it pans that way), brunch opens from the centre
   [['glide','inset(0% 0% 0% 100%)'],['brunch','inset(0% 50% 0% 50%)']].forEach(function(w){var s=document.querySelector('[data-film="'+w[0]+'"]');if(!s)return;var st=s.querySelector('.film__stage'),bx=s.parentElement.classList.contains('pin-spacer')?s.parentElement:s;
     gsap.fromTo(st,{clipPath:w[1]},{clipPath:'inset(0% 0% 0% 0%)',ease:'none',scrollTrigger:{trigger:bx,start:'top bottom',end:'top top',scrub:true}});});
   // Ken Burns clips: sources attach only when the frame reaches the viewport; play once at half visible and hold the last frame (no loop, so no cut)
   var clips=[].slice.call(document.querySelectorAll('.clip__v'));
   if(clips.length&&'IntersectionObserver' in window){var cio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(!e.isIntersecting)return;
-      if(!v.dataset.ld){v.dataset.ld='1';[['webm','video/webm'],['mp4','video/mp4']].forEach(function(x){var so=document.createElement('source');so.src=v.dataset[x[0]];so.type=x[1];v.appendChild(so);});v.load();}
+      if(!v.dataset.ld){v.dataset.ld='1';var need=v.parentElement.clientWidth*(window.devicePixelRatio||1),sm=v.dataset.sm&&need<=+v.dataset.smw;/* 1080 cut for phones, 1440 cut when the frame needs more device pixels; both <=1.0x their source */[['webm','video/webm'],['mp4','video/mp4']].forEach(function(x){var so=document.createElement('source');so.src=sm?v.dataset.sm+'.'+x[0]:v.dataset[x[0]];so.type=x[1];v.appendChild(so);});v.load();}
       if(e.intersectionRatio>=.5){cio.unobserve(v);v.addEventListener('playing',function(){v.classList.add('on');},{once:true});var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});}});},{threshold:[0,.5]});
     clips.forEach(function(v){cio.observe(v);});}
   gsap.from('.hours tr',{x:36,autoAlpha:0,duration:.6,stagger:.05,ease:'power3.out',scrollTrigger:{trigger:'.hours',start:'top 88%',once:true}});

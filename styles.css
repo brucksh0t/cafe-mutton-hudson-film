@@ -246,16 +246,13 @@ html:not(.motion) .film--glide .menu--board li span{color:var(--cream)}
 /* ===== Hard edges (Oct 23 direction): no gradients, feathered masks or vignettes anywhere. Frames are crisp; sections meet on clean edges and enter with masked wipes. ===== */
 .nav::after,.film__veil,.motion .film--hero .film__veil,.table::before,.cap--hero .cap__in::before{display:none}
 .nav{border-bottom:1px solid rgba(245,238,225,.14)}
-.film__stage,.film--impact .film__stage,.motion .film__stage,.motion .film--hero .film__stage,.motion .film--impact .film__stage,.motion .film--pie .film__stage,
-.motion .film--glide .film__canvas,.motion .film--glide .film__poster,html:not(.motion) .film--hero .film__stage{-webkit-mask-image:none!important;mask-image:none!important}
+/* Round 4: photo/film edge feathers and paper section feathers are restored (the rules above, from before 5459060). Title bands stay hard-edged on solid backings. */
 .film__label{box-shadow:none;border-radius:2px;background:#0a1821;padding:.25rem .5rem}
 .motion .cap--hero{text-shadow:none}
 .motion .cap--hero .cap__in{background:rgba(10,24,33,.86);padding:1.1rem 1.3rem 1.3rem;border-left:4px solid var(--butter)}
 .motion .cap--sign,.motion .cap--side,.motion .cap--low,.motion .cap--board{box-shadow:none;border-radius:2px}
 html:not(.motion) .film--hero .cap--hero{text-shadow:none}
 html:not(.motion) .film--hero .cap--hero .cap__in{background:rgba(10,24,33,.86);padding:1rem 1.2rem;border-left:4px solid var(--butter)}
-.paper::before{top:0;bottom:0;-webkit-mask-image:none!important;mask-image:none!important}
-.motion .manifesto::before{-webkit-mask-image:none!important;mask-image:none!important}
 .fan__i{box-shadow:none;border-radius:2px;outline:1px solid rgba(245,238,225,.18)}
 .iris{border-radius:2px}
 /* Ken Burns clips: the still is frame 1 of the clip, so the swap is invisible; reduced motion and lite keep the still */
