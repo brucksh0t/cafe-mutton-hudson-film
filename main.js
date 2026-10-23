@@ -53,7 +53,7 @@
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
   // Preview ladder (mq 360x480 / dq 480x270, every 3rd frame) lands first; the sharp frame replaces it.
-  var FV='6',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
+  var FV='7',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
   function cap(){return Math.min(window.devicePixelRatio||1,2);}
   // Sharp frames are per-frame AVIF (lowest quality that still matches the master, with a floor), WebP fallback (from The Hill build).
   var ext='webp',extOK=false;
@@ -66,7 +66,7 @@
   // Nothing is requested before the first scroll; then one shared queue fetches what is closest to the reader first.
   function Film(sec){
     this.sec=sec;this.box=sec.parentElement.classList.contains('pin-spacer')?sec.parentElement:sec;
-    this.N=+sec.dataset.frames;this.k=mobile?2:(+sec.dataset.dk||1);this.n=Math.floor((this.N-1)/this.k)+1;/* desktop: every frame; phones: every 2nd (weight) */this.name=sec.dataset.film;
+    this.N=(!mobile&&+sec.dataset.dframes)||+sec.dataset.frames;this.noblend=!mobile&&!!sec.dataset.noblend;/* desktop glide: all 193 real source frames, ~9 CSS px per step, drawn without blending (no double rims) */this.k=mobile?2:(+sec.dataset.dk||1);this.n=Math.floor((this.N-1)/this.k)+1;/* desktop: every frame; phones: every 2nd (weight) */this.name=sec.dataset.film;
     this.cv=sec.querySelector('canvas');this.ctx=this.cv.getContext('2d');this.poster=sec.querySelector('.film__poster');
     this.cur=0;this.dir=1;this.shown=false;this.set=null;this.gen=0;this.reset();this.size();
   }
@@ -78,7 +78,7 @@
   Film.prototype.pick=function(){if(mobile){var c=this.cv,cw=c.width||1,ch=c.height||1,cr=CROP[this.name];if(!cr)return 'm';
       var sM=Math.max(cw/1080,ch/1440),sC=Math.max(cw/cr[1],ch/cr[2]);return sC<=Math.max(sM,1)+1e-3?cr[0]:'m';}var c=this.cv,need=Math.max((c.clientWidth||innerWidth)*cap()/16*9,(c.clientHeight||innerHeight)*cap()),t=TIERS[0];
     for(var i=0;i<TIERS.length;i++){t=TIERS[i];if(t.h>=need)break;}return t.k;};
-  Film.prototype.isL=function(i){return i%STEP===0||i===this.n-1;};
+  Film.prototype.isL=function(i){var s=Math.max(STEP,Math.round(this.n/27));return i%s===0||i===this.n-1;};
   Film.prototype.src=function(i,lq){var s=String(i*this.k+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?(this.set==='m'?'mp':this.set+'p'):this.set)+'/'+s+'.'+ext+'?v='+FV;};
   Film.prototype.size=function(){var d=cap(),w=this.cv.clientWidth||innerWidth,h=this.cv.clientHeight||innerHeight;
     this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.imageSmoothingEnabled=true;this.ctx.imageSmoothingQuality='high';
@@ -99,7 +99,7 @@
     this.ctx.globalAlpha=a;this.ctx.drawImage(im,(cw-w)/2,(ch-h)/2,w,h);this.ctx.globalAlpha=1;};
   Film.prototype.draw=function(fr,force){fr=Math.max(0,Math.min(this.n-1,+fr||0));this.fr=fr;var f=Math.round(fr),a=Math.floor(fr),b=Math.min(this.n-1,a+1),t=fr-a;
     if(f!==this.cur)this.dir=f>this.cur?1:-1;var moved=f!==this.cur||Math.abs(t-(this.ft||0))>.01;this.cur=f;if(!moved&&!force)return;
-    if(this.ok[a]&&this.ok[b]&&t>.02&&t<.98&&a!==b){this.paint(this.full[a],1);this.paint(this.full[b],t);this.drawn=f;this.drawnQ='full';this.ft=t;this.blend=true;this.shownCheck();pump();return;}
+    if(!this.noblend&&this.ok[a]&&this.ok[b]&&t>.02&&t<.98&&a!==b){this.paint(this.full[a],1);this.paint(this.full[b],t);this.drawn=f;this.drawnQ='full';this.ft=t;this.blend=true;this.shownCheck();pump();return;}
     this.ft=t;
     var bf=-1,bl=-1,d;for(d=0;d<this.n&&(bf<0||bl<0);d++){
       if(bf<0){if(f-d>=0&&this.ok[f-d])bf=f-d;else if(f+d<this.n&&this.ok[f+d])bf=f+d;}
@@ -134,8 +134,11 @@
   var pumping=false;
   function pump(){if(!started||!extOK||pumping)return;pumping=true;
     for(;;){var best=null,bp=1e18;
-      for(var k=0;k<films.length;k++){var f=films[k],a=f.away();if(a>NEARLQ)continue;var c=f.next();if(!c||(!c.lq&&a>NEAR))continue;
-        var p=(c.lq?0:1e6)+a*1e4+c.p;if(p<bp){bp=p;best={f:f,c:c};}}
+      for(var k=0;k<films.length;k++){var f=films[k],a=f.away();if(a>4.5)continue;var c=f.next();if(!c)continue;
+        // a film coming up (up to 4 screens away) gets its first 3 key frames early, so a fast cold scroll never meets it on the poster alone
+        var ld=0,e1=-1;for(var z=1;z<f.n&&ld<3;z++){if(f.isL(z)){if(f.req[z])ld++;else if(e1<0)e1=z;}}var early=a>0&&a<=4&&!c.lq&&ld<3&&e1>0;if(early)c={i:e1,lq:false,p:0};/* frame 1 is the poster, so start from the next key frame */
+        if(!early&&(a>NEARLQ||(!c.lq&&a>NEAR)))continue;
+        var p=early?5e5+a:(c.lq?0:1e6)+a*1e4+c.p;if(p<bp){bp=p;best={f:f,c:c};}}
       if(!best||live>=MAX)break;fetchOne(best.f,best.c.i,best.c.lq);}
     pumping=false;}
   films.forEach(function(f){f.seed();});
