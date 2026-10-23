@@ -34,7 +34,11 @@
   chrome();addEventListener('resize',chrome);
   // one filled BOOK DINNER per screen: header/bar copy fills only once the hero CTA has left
   function ctaOut(v){root.classList.toggle('cta-out',!!v);}
+  // posters for the later films (and the hero sign) are attached after the hero poster, so they don't compete with the first paint
+  function hydrate(){[].forEach.call(document.querySelectorAll('[data-srcset]'),function(e){e.srcset=e.dataset.srcset;e.removeAttribute('data-srcset');});
+    [].forEach.call(document.querySelectorAll('img[data-src]'),function(e){e.src=e.dataset.src;e.removeAttribute('data-src');});}
   function still(){
+    hydrate();
     root.classList.remove('motion');
     var hb=document.querySelector('.cap--hero .btns');
     if(hb&&'IntersectionObserver' in window)new IntersectionObserver(function(es){ctaOut(!es[0].isIntersecting);}).observe(hb);else ctaOut(true);
@@ -42,6 +46,7 @@
   if(!/\bmotion\b/.test(root.className)){still();return;}
   // The scroll scenes boot only after the hero poster has painted, so their setup work never delays the first (LCP) paint.
   function boot(){
+  hydrate();
   gsap.registerPlugin(ScrollTrigger);
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
@@ -198,7 +203,8 @@
   var booted=false,hp=document.querySelector('[data-film="hero"] .film__poster');
   // GSAP is fetched only after the poster, so it never competes with the first paint for bandwidth
   function load(src){return new Promise(function(res,rej){var e=document.createElement('script');e.src=src;e.onload=res;e.onerror=rej;document.head.appendChild(e);});}
-  function go(){if(booted)return;booted=true;
+  function go(){if(booted)return;booted=true;requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(fetchMotion,60);});});}
+  function fetchMotion(){
     load('js/gsap.min.js').then(function(){return load('js/ScrollTrigger.min.js');}).then(function(){requestAnimationFrame(function(){setTimeout(function(){if(window.gsap&&window.ScrollTrigger)boot();else still();},0);});},still);}
   if(hp&&!(hp.complete&&hp.naturalWidth)){hp.addEventListener('load',go);hp.addEventListener('error',go);setTimeout(go,3000);}else go();
 })();

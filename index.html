@@ -8,11 +8,11 @@
 <meta name="theme-color" content="#10232f">
 <link rel="icon" type="image/png" href="img/favicon.png">
 <script>(function(d){var c=d.documentElement,n=navigator.connection||{};c.className='js';if(n.saveData||/(^|-)2g$/.test(n.effectiveType||''))c.className+=' lite';else if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)c.className+=' motion';})(document);</script>
-<link rel="preload" as="font" type="font/woff2" href="fonts/fraunces.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="fonts/work-sans.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="fonts/fraunces-sub.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="fonts/work-sans-sub.woff2" crossorigin>
 <link rel="preload" as="image" type="image/webp" media="(max-width:899px)" imagesrcset="img/hero-m-540.webp 540w, img/hero-m-720.webp 720w, img/hero-m-1080.webp 1080w" imagesizes="(max-aspect-ratio:3/4) 75vh, 100vw" fetchpriority="high">
 <link rel="preload" as="image" type="image/webp" media="(min-width:900px)" imagesrcset="img/hero-1280.webp 1280w, img/hero-1920.webp 1920w" imagesizes="100vw" fetchpriority="high">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <aside class="flag" aria-label="Notice"><p>Concept preview · not affiliated with Cafe Mutton</p></aside>
@@ -40,7 +40,7 @@
       <div class="btns"><a class="btn btn--primary btn--lg" href="https://resy.com/cities/hudson-ny/venues/cafe-mutton" target="_blank" rel="noopener">BOOK DINNER</a><a class="btn btn--ghost btn--lg" href="#menu">SEE THE MENU</a></div>
     </div></div>
     <div class="cap cap--sign">
-      <img class="sign" src="img/logo-cream-640.webp" alt="" width="640" height="156" loading="lazy" decoding="async">
+      <img class="sign" data-src="img/logo-cream-640.webp" alt="" width="640" height="156" loading="lazy" decoding="async">
       <p class="cap__big">A small neighborhood restaurant on a sunny corner in Hudson.</p>
     </div>
   </div>
@@ -62,7 +62,7 @@
 <!-- IMPACT 1: "CLOSE" — the paper opens through the letters onto the pie -->
 <div class="pin-spacer"><section class="film film--impact film--pie" data-film="pie" data-frames="65" aria-labelledby="pie-h">
   <div class="film__stage">
-    <picture><source type="image/webp" media="(max-width:899px)" srcset="img/pie-m-540.webp 540w, img/pie-m-720.webp 720w, img/pie-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" srcset="img/pie-1280.webp 1280w, img/pie-1920.webp 1920w" sizes="100vw"><img class="film__poster" src="img/pie-1280.jpg" alt="Overhead: a white oval baking dish with a browned, piped potato top on a blue-rimmed plate, low sun across a dark blue table." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
+    <picture><source type="image/webp" media="(max-width:899px)" data-srcset="img/pie-m-540.webp 540w, img/pie-m-720.webp 720w, img/pie-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" data-srcset="img/pie-1280.webp 1280w, img/pie-1920.webp 1920w" sizes="100vw"><img class="film__poster" data-src="img/pie-1280.jpg" alt="Overhead: a white oval baking dish with a browned, piped potato top on a blue-rimmed plate, low sun across a dark blue table." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture><noscript><picture><source type="image/webp" media="(max-width:899px)" srcset="img/pie-m-540.webp 540w, img/pie-m-720.webp 720w, img/pie-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" srcset="img/pie-1280.webp 1280w, img/pie-1920.webp 1920w" sizes="100vw"><img class="film__poster" src="img/pie-1280.jpg" alt="Overhead: a white oval baking dish with a browned, piped potato top on a blue-rimmed plate, low sun across a dark blue table." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture></noscript>
     <canvas class="film__canvas" aria-hidden="true"></canvas>
     <div class="film__veil" aria-hidden="true"></div>
   </div>
@@ -165,7 +165,7 @@
 <!-- IMPACT 2: the camera glides across the table; the specials board rides along -->
 <div class="pin-spacer"><section class="film film--impact film--glide" id="specials" data-film="glide" data-frames="81" aria-labelledby="sp-h">
   <div class="film__stage">
-    <picture><source type="image/webp" media="(max-width:899px)" srcset="img/glide-m-540.webp 540w, img/glide-m-720.webp 720w, img/glide-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" srcset="img/glide-1280.webp 1280w, img/glide-1920.webp 1920w" sizes="100vw"><img class="film__poster" src="img/glide-1280.jpg" alt="Overhead: a whole pan-fried flatfish with a lemon slice on a scalloped floral platter on a blue table." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
+    <picture><source type="image/webp" media="(max-width:899px)" data-srcset="img/glide-m-540.webp 540w, img/glide-m-720.webp 720w, img/glide-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" data-srcset="img/glide-1280.webp 1280w, img/glide-1920.webp 1920w" sizes="100vw"><img class="film__poster" data-src="img/glide-1280.jpg" alt="Overhead: a whole pan-fried flatfish with a lemon slice on a scalloped floral platter on a blue table." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture><noscript><picture><source type="image/webp" media="(max-width:899px)" srcset="img/glide-m-540.webp 540w, img/glide-m-720.webp 720w, img/glide-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" srcset="img/glide-1280.webp 1280w, img/glide-1920.webp 1920w" sizes="100vw"><img class="film__poster" src="img/glide-1280.jpg" alt="Overhead: a whole pan-fried flatfish with a lemon slice on a scalloped floral platter on a blue table." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture></noscript>
     <canvas class="film__canvas" aria-hidden="true"></canvas>
     <div class="film__veil" aria-hidden="true"></div>
   </div>
@@ -203,7 +203,7 @@
 <!-- IMPACT 3: brunch, closer and closer to the egg -->
 <div class="pin-spacer"><section class="film film--impact film--brunch" id="brunch" data-film="brunch" data-frames="65" aria-labelledby="br-h">
   <div class="film__stage">
-    <picture><source type="image/webp" media="(max-width:899px)" srcset="img/brunch-m-540.webp 540w, img/brunch-m-720.webp 720w, img/brunch-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" srcset="img/brunch-1280.webp 1280w, img/brunch-1920.webp 1920w" sizes="100vw"><img class="film__poster" src="img/brunch-1280.jpg" alt="Overhead: a floral bowl of savory grain porridge with a poached egg, green herb butter and roasted squash." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
+    <picture><source type="image/webp" media="(max-width:899px)" data-srcset="img/brunch-m-540.webp 540w, img/brunch-m-720.webp 720w, img/brunch-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" data-srcset="img/brunch-1280.webp 1280w, img/brunch-1920.webp 1920w" sizes="100vw"><img class="film__poster" data-src="img/brunch-1280.jpg" alt="Overhead: a floral bowl of savory grain porridge with a poached egg, green herb butter and roasted squash." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture><noscript><picture><source type="image/webp" media="(max-width:899px)" srcset="img/brunch-m-540.webp 540w, img/brunch-m-720.webp 720w, img/brunch-m-1080.webp 1080w" sizes="(max-aspect-ratio:3/4) 75vh, 100vw"><source type="image/webp" srcset="img/brunch-1280.webp 1280w, img/brunch-1920.webp 1920w" sizes="100vw"><img class="film__poster" src="img/brunch-1280.jpg" alt="Overhead: a floral bowl of savory grain porridge with a poached egg, green herb butter and roasted squash." width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture></noscript>
     <canvas class="film__canvas" aria-hidden="true"></canvas>
     <div class="film__veil" aria-hidden="true"></div>
   </div>
@@ -268,6 +268,6 @@
   <a class="btn btn--ghost" href="#menu">MENU</a>
   <a class="btn btn--primary" href="https://resy.com/cities/hudson-ny/venues/cafe-mutton" target="_blank" rel="noopener">BOOK DINNER</a>
 </div>
-<script src="main.js?v=6" defer></script>
+<script src="main.js?v=9" defer></script>
 </body>
 </html>
