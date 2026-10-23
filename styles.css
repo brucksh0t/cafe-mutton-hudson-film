@@ -197,7 +197,7 @@ address{font-style:normal;font-family:var(--disp);font-size:1.8rem;line-height:1
   .motion .cap--side,.motion .cap--low{left:6vw;right:6vw;top:auto;bottom:calc(76px + var(--safe) + 8vh);transform:none;max-width:none}
   .motion .cap--sign{top:42%}
   /* glide on phones: film in the top 56%, board below */
-  .motion .film--glide .film__canvas,.motion .film--glide .film__poster{left:0;top:var(--navh,62px);width:100%;height:calc(54svh - var(--navh,62px));-webkit-mask-image:linear-gradient(to bottom,transparent,#000 10%,#000 78%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 10%,#000 78%,transparent)}
+  .motion .film--glide .film__canvas,.motion .film--glide .film__poster{left:0;top:var(--navh,62px);width:100%;height:calc(54svh - var(--navh,62px));-webkit-mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 78%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 78%,transparent)}
   .motion .film--glide .film__label{bottom:auto;top:calc(54svh - 2.6rem)}
   .motion .cap--board{left:6vw;right:6vw;width:auto;top:calc(54svh + .2rem);transform:none;background:none;box-shadow:none;padding:0}
   .motion .cap--board .cap__big{font-size:1.7rem}
