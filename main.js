@@ -53,7 +53,7 @@
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
   // Preview ladder (mq 360x480 / dq 480x270, every 3rd frame) lands first; the sharp frame replaces it.
-  var FV='3',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
+  var FV='4',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
   function cap(){return Math.min(window.devicePixelRatio||1,2);}
   // Sharp frames are per-frame AVIF (lowest quality that still matches the master, with a floor), WebP fallback (from The Hill build).
   var ext='webp',extOK=false;
@@ -66,7 +66,7 @@
   // Nothing is requested before the first scroll; then one shared queue fetches what is closest to the reader first.
   function Film(sec){
     this.sec=sec;this.box=sec.parentElement.classList.contains('pin-spacer')?sec.parentElement:sec;
-    this.N=+sec.dataset.frames;this.k=2;this.n=Math.floor((this.N-1)/this.k)+1;/* every 2nd source frame (weight) */this.name=sec.dataset.film;
+    this.N=+sec.dataset.frames;this.k=mobile?2:(+sec.dataset.dk||1);this.n=Math.floor((this.N-1)/this.k)+1;/* desktop: every frame; phones: every 2nd (weight) */this.name=sec.dataset.film;
     this.cv=sec.querySelector('canvas');this.ctx=this.cv.getContext('2d');this.poster=sec.querySelector('.film__poster');
     this.cur=0;this.dir=1;this.shown=false;this.set=null;this.gen=0;this.reset();this.size();
   }
@@ -79,7 +79,7 @@
   Film.prototype.size=function(){var d=cap(),w=this.cv.clientWidth||innerWidth,h=this.cv.clientHeight||innerHeight;
     this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.imageSmoothingEnabled=true;this.ctx.imageSmoothingQuality='high';
     var t=this.pick();if(t!==this.set){var had=this.set;this.set=t;if(had){this.reset();this.seed();pump();}}
-    this.draw(this.cur,true);};
+    this.draw(this.fr==null?this.cur:this.fr,true);};
   // the poster is frame 1 (already on screen), so it seeds the canvas without a frame request
   Film.prototype.seed=function(){if(!this.poster)return;var self=this,im=this.poster,g=this.gen;
     // a fresh Image of the chosen poster file (from cache) reports its true pixel size, not the srcset-density size
@@ -90,20 +90,27 @@
     return {name:this.name,set:this.set,n:this.n,lead:this.lead||0,cur:this.cur,drawn:this.drawn,drawnQ:this.drawnQ,loaded:this.ok.reduce(function(a,b){return a+b;},0),
       previews:this.lok.reduce(function(a,b){return a+b;},0),requested:this.req.reduce(function(a,b){return a+b;},0)+this.lreq.reduce(function(a,b){return a+b;},0),
       cw:this.cv.width,ch:this.cv.height,src:im?im.naturalWidth+'x'+im.naturalHeight:null};};
-  Film.prototype.draw=function(f,force){f=Math.max(0,Math.min(this.n-1,Math.round(f)));if(f===this.cur&&!force)return;if(f!==this.cur)this.dir=f>this.cur?1:-1;this.cur=f;
+  // fr is fractional: when both neighbouring sharp frames are loaded they are crossfaded, so the scrub moves continuously between frames
+  Film.prototype.paint=function(im,a){var c=this.cv,cw=c.width,ch=c.height,s=Math.max(cw/im.naturalWidth,ch/im.naturalHeight),w=im.naturalWidth*s,h=im.naturalHeight*s;
+    this.ctx.globalAlpha=a;this.ctx.drawImage(im,(cw-w)/2,(ch-h)/2,w,h);this.ctx.globalAlpha=1;};
+  Film.prototype.draw=function(fr,force){fr=Math.max(0,Math.min(this.n-1,+fr||0));this.fr=fr;var f=Math.round(fr),a=Math.floor(fr),b=Math.min(this.n-1,a+1),t=fr-a;
+    if(f!==this.cur)this.dir=f>this.cur?1:-1;var moved=f!==this.cur||Math.abs(t-(this.ft||0))>.01;this.cur=f;if(!moved&&!force)return;
+    if(this.ok[a]&&this.ok[b]&&t>.02&&t<.98&&a!==b){this.paint(this.full[a],1);this.paint(this.full[b],t);this.drawn=f;this.drawnQ='full';this.ft=t;this.blend=true;this.shownCheck();pump();return;}
+    this.ft=t;
     var bf=-1,bl=-1,d;for(d=0;d<this.n&&(bf<0||bl<0);d++){
       if(bf<0){if(f-d>=0&&this.ok[f-d])bf=f-d;else if(f+d<this.n&&this.ok[f+d])bf=f+d;}
       if(bl<0){if(f-d>=0&&this.lok[f-d])bl=f-d;else if(f+d<this.n&&this.lok[f+d])bl=f+d;}}
     var at=-1,q='';if(bf>=0&&(bl<0||Math.abs(bf-f)<=Math.abs(bl-f)+1.5)){at=bf;q='full';}else if(bl>=0){at=bl;q='lq';}
-    if(at<0||(at===this.drawn&&q===this.drawnQ&&!force))return;
-    var im=q==='full'?this.full[at]:this.lq[at];var c=this.cv,cw=c.width,ch=c.height,s=Math.max(cw/im.naturalWidth,ch/im.naturalHeight),w=im.naturalWidth*s,h=im.naturalHeight*s;
-    this.ctx.drawImage(im,(cw-w)/2,(ch-h)/2,w,h);this.drawn=at;this.drawnQ=q;
-    if(!this.shown){this.shown=true;gsap.to(this.poster,{autoAlpha:0,duration:.4});}
+    if(at<0||(at===this.drawn&&q===this.drawnQ&&!force&&!this.blend))return;
+    this.paint(q==='full'?this.full[at]:this.lq[at],1);this.drawn=at;this.drawnQ=q;this.blend=false;this.shownCheck();
     pump();};
+  Film.prototype.shownCheck=function(){if(!this.shown){this.shown=true;gsap.to(this.poster,{autoAlpha:0,duration:.4});}};
   Film.prototype.next=function(){var n=this.n,c=this.cur,dir=this.dir,best=-1,bd=1e9,i,d;
     // phones: full-resolution, low-quality previews (every 3rd frame) land first, so slow networks keep up without drawing above 1.0x
-    if(this.set==='m'){for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
-      if(best>=0)return {i:best,lq:true,p:bd};}
+    // previews only while the sharp frames are behind: never for a frame whose sharp copy is loaded or requested, only within 12 frames, and not at all once the next 6 sharp frames are in
+    if(this.set==='m'){var keep=true;for(d=0;d<=6;d++){i=c+d*dir;if(i<0||i>=n)break;if(!this.ok[i]){keep=false;break;}}
+      if(!keep){for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]&&!this.req[i]&&Math.abs(i-c)<=12){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
+        if(best>=0)return {i:best,lq:true,p:bd};}}
     // then every 3rd sharp frame ahead of the scroll direction, then the gaps
     for(i=0;i<n;i++){if(this.isL(i)&&!this.req[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
     if(best>=0)return {i:best,lq:false,p:bd};
@@ -111,9 +118,9 @@
     return best>=0?{i:best,lq:false,p:1000+bd}:null;};
   var films=[].slice.call(document.querySelectorAll('[data-film]')).map(function(s){return new Film(s);});
   window.__cmFilms=films;
-  var started=false,live=0,MAX=3,NEAR=2.5,NEARLQ=4;
+  var started=false,live=0,MAX=3,NEAR=3.5,NEARLQ=4;
   function fetchOne(f,i,lq){var g=f.gen;live++;(lq?f.lreq:f.req)[i]=1;var im=new Image();im.decoding='async';
-    function done(okk){live--;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.cur,true);}}pump();}
+    function done(okk){live--;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.fr==null?f.cur:f.fr,true);}}pump();}
     im.onload=function(){(im.decode?im.decode():Promise.resolve()).then(function(){done(true);},function(){done(true);});};
     im.onerror=function(){var rq=lq?f.lreq:f.req,key=(lq?'l':'f')+i;f.tries=f.tries||{};f.tries[key]=(f.tries[key]||0)+1;
       if(f.tries[key]<3)setTimeout(function(){if(g===f.gen){rq[i]=0;pump();}},700*f.tries[key]);done(false);};// a failed frame (e.g. a CDN 503) is retried twice with backoff; meanwhile drawing uses the nearest loaded frame
