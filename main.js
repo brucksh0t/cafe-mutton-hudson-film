@@ -53,7 +53,7 @@
   var mobile=window.matchMedia('(max-width:899px)').matches;
   // Tiers from the 2x upscales: m = 1080x1440 crop for phones/tablets, d = 1920x1080, x = 2560x1440 (large or high-DPR desktop).
   // Preview ladder (mq 360x480 / dq 480x270, every 3rd frame) lands first; the sharp frame replaces it.
-  var FV='2',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
+  var FV='3',TIERS=[{k:'e',h:900},{k:'d',h:1080},{k:'x',h:1440}],STEP=3;// e = 1600x900, so a 1440x900 desktop draws at exactly 1.0x
   function cap(){return Math.min(window.devicePixelRatio||1,2);}
   // Sharp frames are per-frame AVIF (lowest quality that still matches the master, with a floor), WebP fallback (from The Hill build).
   var ext='webp',extOK=false;
@@ -66,7 +66,7 @@
   // Nothing is requested before the first scroll; then one shared queue fetches what is closest to the reader first.
   function Film(sec){
     this.sec=sec;this.box=sec.parentElement.classList.contains('pin-spacer')?sec.parentElement:sec;
-    this.N=+sec.dataset.frames;this.k=mobile?1:2;this.n=Math.floor((this.N-1)/this.k)+1;/* desktop plays every 2nd frame (weight); phones play all */this.name=sec.dataset.film;
+    this.N=+sec.dataset.frames;this.k=2;this.n=Math.floor((this.N-1)/this.k)+1;/* every 2nd source frame (weight) */this.name=sec.dataset.film;
     this.cv=sec.querySelector('canvas');this.ctx=this.cv.getContext('2d');this.poster=sec.querySelector('.film__poster');
     this.cur=0;this.dir=1;this.shown=false;this.set=null;this.gen=0;this.reset();this.size();
   }
@@ -75,7 +75,7 @@
   Film.prototype.pick=function(){if(mobile)return 'm';var c=this.cv,need=Math.max((c.clientWidth||innerWidth)*cap()/16*9,(c.clientHeight||innerHeight)*cap()),t=TIERS[0];
     for(var i=0;i<TIERS.length;i++){t=TIERS[i];if(t.h>=need)break;}return t.k;};
   Film.prototype.isL=function(i){return i%STEP===0||i===this.n-1;};
-  Film.prototype.src=function(i,lq){var s=String(i*this.k+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?(this.set==='m'?'mq':'dq'):this.set)+'/'+s+'.'+(lq?'webp':ext)+'?v='+FV;};
+  Film.prototype.src=function(i,lq){var s=String(i*this.k+1);while(s.length<3)s='0'+s;return 'frames/'+this.name+'/'+(lq?'mp':this.set)+'/'+s+'.'+ext+'?v='+FV;};
   Film.prototype.size=function(){var d=cap(),w=this.cv.clientWidth||innerWidth,h=this.cv.clientHeight||innerHeight;
     this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.imageSmoothingEnabled=true;this.ctx.imageSmoothingQuality='high';
     var t=this.pick();if(t!==this.set){var had=this.set;this.set=t;if(had){this.reset();this.seed();pump();}}
@@ -83,7 +83,7 @@
   // the poster is frame 1 (already on screen), so it seeds the canvas without a frame request
   Film.prototype.seed=function(){if(!this.poster)return;var self=this,im=this.poster,g=this.gen;
     // a fresh Image of the chosen poster file (from cache) reports its true pixel size, not the srcset-density size
-    function use(){if(g!==self.gen||!im.naturalWidth)return;var t=new Image();t.onload=function(){if(g!==self.gen)return;self.lq[0]=t;self.lok[0]=1;self.draw(self.cur,true);};t.src=im.currentSrc||im.src;}
+    function use(){if(g!==self.gen||!im.naturalWidth)return;var t=new Image();t.onload=function(){if(g!==self.gen)return;self.lq[0]=t;self.lok[0]=1;self.lreq[0]=1;self.draw(self.cur,true);};t.src=im.currentSrc||im.src;}
     if(im.complete)use();else im.addEventListener('load',use);};
   Film.prototype.away=function(){var r=this.box.getBoundingClientRect(),h=innerHeight;return r.top>h?(r.top-h)/h:r.bottom<0?-r.bottom/h:0;};
   Film.prototype.state=function(){var im=this.drawnQ==='full'?this.full[this.drawn]:this.lq[this.drawn];
@@ -101,14 +101,17 @@
     if(!this.shown){this.shown=true;gsap.to(this.poster,{autoAlpha:0,duration:.4});}
     pump();};
   Film.prototype.next=function(){var n=this.n,c=this.cur,dir=this.dir,best=-1,bd=1e9,i,d;
-    // no low-res previews (they drew above 1.0x): every 3rd sharp frame first, ahead of the scroll direction, then the gaps
+    // phones: full-resolution, low-quality previews (every 3rd frame) land first, so slow networks keep up without drawing above 1.0x
+    if(this.set==='m'){for(i=0;i<n;i++){if(this.isL(i)&&!this.lreq[i]&&!this.ok[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
+      if(best>=0)return {i:best,lq:true,p:bd};}
+    // then every 3rd sharp frame ahead of the scroll direction, then the gaps
     for(i=0;i<n;i++){if(this.isL(i)&&!this.req[i]){d=(i-c)*dir;d=d>=0?d:-d*1.5;if(d<bd){bd=d;best=i;}}}
     if(best>=0)return {i:best,lq:false,p:bd};
     for(i=0;i<n;i++){if(!this.req[i]){d=(i-c)*dir;d=d>=0?d:-d*2+1;if(d<bd){bd=d;best=i;}}}
     return best>=0?{i:best,lq:false,p:1000+bd}:null;};
   var films=[].slice.call(document.querySelectorAll('[data-film]')).map(function(s){return new Film(s);});
   window.__cmFilms=films;
-  var started=false,live=0,MAX=4,NEAR=2.5,NEARLQ=4;
+  var started=false,live=0,MAX=3,NEAR=2.5,NEARLQ=4;
   function fetchOne(f,i,lq){var g=f.gen;live++;(lq?f.lreq:f.req)[i]=1;var im=new Image();im.decoding='async';
     function done(okk){live--;if(g===f.gen){if(okk){if(lq){f.lq[i]=im;f.lok[i]=1;}else{f.full[i]=im;f.ok[i]=1;}if(Math.abs(i-f.cur)<=8)f.draw(f.cur,true);}}pump();}
     im.onload=function(){(im.decode?im.decode():Promise.resolve()).then(function(){done(true);},function(){done(true);});};
